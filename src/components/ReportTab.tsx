@@ -3,15 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import type { Report, ReportSectionData } from '../types'
 import { questions } from '../questions'
-import { generateFullReport, hasApiKey } from '../services/geminiAI'
+import { generateFullReport } from '../services/geminiAI'
 
 interface Props {
   report: Report
   onReportGenerated: (content: string, sections: Record<string, ReportSectionData>) => void
-  onOpenSettings: () => void
 }
 
-export default function ReportTab({ report, onReportGenerated, onOpenSettings }: Props) {
+export default function ReportTab({ report, onReportGenerated }: Props) {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [currentStep, setCurrentStep] = useState('')
@@ -24,11 +23,6 @@ export default function ReportTab({ report, onReportGenerated, onOpenSettings }:
   const hasAnswers = answers && Object.keys(answers).length >= questions.length
 
   const handleGenerate = async () => {
-    if (!hasApiKey()) {
-      setError('لم يتم إدخال مفتاح API')
-      return
-    }
-
     setLoading(true)
     setError('')
     setProgress(0)
@@ -44,18 +38,15 @@ export default function ReportTab({ report, onReportGenerated, onOpenSettings }:
         }
       )
 
-      // Build combined text for reportContent
       const combinedText = Object.values(sections).map((s) => s.content).join('\n\n---\n\n')
       onReportGenerated(combinedText, sections)
       setDone(true)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'حدث خطأ غير متوقع'
-      if (msg.includes('API') || msg.includes('مفتاح')) {
-        setError('لم يتم إدخال مفتاح API')
-      } else if (msg.includes('rate') || msg.includes('429')) {
-        setError('تم تجاوز حد الطلبات — انتظر دقيقة وأعد المحاولة')
+      if (msg.includes('rate') || msg.includes('429') || msg.includes('QUOTA')) {
+        setError('تم تجاوز الحد المجاني — انتظر دقيقة وأعد المحاولة')
       } else if (msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')) {
-        setError('تعذّر الاتصال — تحقق من الإنترنت أو مفتاح API')
+        setError('تعذّر الاتصال بـ Google — تحقق من الإنترنت')
       } else {
         setError(msg)
       }
@@ -70,7 +61,6 @@ export default function ReportTab({ report, onReportGenerated, onOpenSettings }:
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Loading screen
   if (loading) {
     return (
       <div className="max-w-[600px] mx-auto">
@@ -85,8 +75,6 @@ export default function ReportTab({ report, onReportGenerated, onOpenSettings }:
             </h3>
             <p className="text-sm text-gray-500 mb-4">{currentStep}</p>
           </div>
-
-          {/* Progress bar */}
           <div className="w-full h-3 bg-gray-100 rounded-full mb-3 overflow-hidden">
             <div
               className="h-full bg-purple rounded-full transition-all duration-500"
@@ -94,7 +82,6 @@ export default function ReportTab({ report, onReportGenerated, onOpenSettings }:
             />
           </div>
           <p className="text-xs text-gray-400">{progress}%</p>
-
           <p className="text-xs text-gray-300 mt-6">
             يتم توليد 7 أقسام — قد يستغرق 1-2 دقيقة
           </p>
@@ -103,7 +90,6 @@ export default function ReportTab({ report, onReportGenerated, onOpenSettings }:
     )
   }
 
-  // Done — show success + navigate to editor
   if (done && report.reportContent) {
     return (
       <div className="max-w-[700px] mx-auto space-y-6">
@@ -130,8 +116,6 @@ export default function ReportTab({ report, onReportGenerated, onOpenSettings }:
             </button>
           </div>
         </div>
-
-        {/* Preview */}
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="text-base font-bold mb-4" style={{ color: '#2d2066' }}>
             معاينة سريعة
@@ -144,7 +128,6 @@ export default function ReportTab({ report, onReportGenerated, onOpenSettings }:
     )
   }
 
-  // Initial state — generate button
   return (
     <div className="max-w-[700px] mx-auto space-y-6">
       <div className="bg-white rounded-xl shadow-sm p-6">
@@ -155,18 +138,6 @@ export default function ReportTab({ report, onReportGenerated, onOpenSettings }:
         {!hasAnswers ? (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800">
             ⚠️ أكمل المقابلة أولاً — يجب الإجابة على جميع الأسئلة قبل توليد التقرير.
-          </div>
-        ) : !hasApiKey() ? (
-          <div>
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800 mb-4">
-              ⚠️ يجب إدخال مفتاح API أولاً لتفعيل توليد التقارير
-            </div>
-            <button
-              onClick={onOpenSettings}
-              className="bg-purple text-white px-6 py-3 rounded-lg font-medium text-sm hover:opacity-90 transition-opacity cursor-pointer"
-            >
-              ⚙️ اذهب للإعدادات
-            </button>
           </div>
         ) : (
           <div>
@@ -185,17 +156,9 @@ export default function ReportTab({ report, onReportGenerated, onOpenSettings }:
         {error && (
           <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
             <p className="mb-2">{error}</p>
-            <div className="flex gap-2">
-              {error.includes('مفتاح') ? (
-                <button onClick={onOpenSettings} className="text-xs text-purple hover:underline cursor-pointer">
-                  ⚙️ اذهب للإعدادات
-                </button>
-              ) : (
-                <button onClick={handleGenerate} className="text-xs text-purple hover:underline cursor-pointer">
-                  إعادة المحاولة
-                </button>
-              )}
-            </div>
+            <button onClick={handleGenerate} className="text-xs text-purple hover:underline cursor-pointer">
+              إعادة المحاولة
+            </button>
           </div>
         )}
       </div>

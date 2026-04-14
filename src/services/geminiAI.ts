@@ -1,16 +1,11 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai'
 import type { OrgData, Answers, ReportSectionData } from '../types'
 
-const API_KEY_STORAGE = 'sana_gemini_key'
-
 function getModel() {
-  const apiKey = localStorage.getItem(API_KEY_STORAGE)
-  if (!apiKey) {
-    throw new Error('لم يتم إدخال مفتاح Gemini API. يُرجى الذهاب للإعدادات ⚙️')
-  }
+  const apiKey = 'AIzaSyBWyWzIy4tmm04_raTI6Xe0GAFEqHmhmH4'
   const genAI = new GoogleGenerativeAI(apiKey)
   return genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash',
     safetySettings: [
       { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
       { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -20,18 +15,7 @@ function getModel() {
 }
 
 export function hasApiKey(): boolean {
-  return !!localStorage.getItem(API_KEY_STORAGE)
-}
-
-export async function testGeminiConnection(): Promise<{ ok: boolean; error?: string }> {
-  try {
-    const model = getModel()
-    const result = await model.generateContent('قل: جاهز')
-    const text = result.response.text()
-    return text.length > 0 ? { ok: true } : { ok: false, error: 'استجابة فارغة' }
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'خطأ غير معروف' }
-  }
+  return true
 }
 
 const SYSTEM_PROMPT = `أنت مستشار ابتكار اجتماعي محترف في مركز سنا للابتكار الاجتماعي بالمملكة العربية السعودية.

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { createEmptyReport, getReportById, upsertReport } from '../types'
 import type { Report, ReportSectionData } from '../types'
-import { hasApiKey } from '../services/geminiAI'
 import OrgDataTab from './OrgDataTab'
 import InterviewTab from './InterviewTab'
 import ReportTab from './ReportTab'
@@ -58,8 +57,6 @@ export default function NewReport() {
     showSaved()
   }
 
-  const apiKeyExists = hasApiKey()
-
   return (
     <>
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
@@ -90,7 +87,7 @@ export default function NewReport() {
             title="الإعدادات"
           >
             ⚙️
-            <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${apiKeyExists ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500" />
           </button>
         </div>
       </header>
@@ -156,7 +153,6 @@ export default function NewReport() {
               }
               saveReport(updated)
             }}
-            onOpenSettings={() => setSettingsOpen(true)}
           />
         )}
       </main>
