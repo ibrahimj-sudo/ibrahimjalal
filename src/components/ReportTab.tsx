@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import type { Report, ReportSectionData } from '../types'
 import { questions } from '../questions'
-import { generateFullReport, hasApiKey } from '../services/claudeAI'
+import { generateFullReport, hasApiKey } from '../services/geminiAI'
 
 interface Props {
   report: Report

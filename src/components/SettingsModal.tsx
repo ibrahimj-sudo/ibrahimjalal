@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { testConnection } from '../services/claudeAI'
+import { testGeminiConnection } from '../services/geminiAI'
 
-const API_KEY_STORAGE = 'sana_api_key'
+const API_KEY_STORAGE = 'sana_gemini_key'
 
 type KeyStatus = 'empty' | 'saved' | 'testing' | 'ok' | 'error'
 
@@ -38,7 +38,7 @@ export default function SettingsModal({ open, onClose }: Props) {
     if (!apiKey.trim()) return
     localStorage.setItem(API_KEY_STORAGE, apiKey.trim())
     setStatus('saved')
-    showToast('تم حفظ مفتاح API بنجاح ✓')
+    showToast('تم حفظ مفتاح Gemini ✓')
   }
 
   const handleTest = async () => {
@@ -46,7 +46,7 @@ export default function SettingsModal({ open, onClose }: Props) {
     localStorage.setItem(API_KEY_STORAGE, apiKey.trim())
     setStatus('testing')
     setErrorMsg('')
-    const result = await testConnection()
+    const result = await testGeminiConnection()
     if (result.ok) {
       setStatus('ok')
       showToast('الاتصال يعمل بنجاح ✓')
@@ -60,15 +60,15 @@ export default function SettingsModal({ open, onClose }: Props) {
     localStorage.removeItem(API_KEY_STORAGE)
     setApiKey('')
     setStatus('empty')
-    showToast('تم حذف مفتاح API')
+    showToast('تم حذف مفتاح Gemini')
   }
 
   const statusConfig: Record<KeyStatus, { dot: string; text: string }> = {
     empty:   { dot: 'bg-gray-400', text: 'لم يتم إدخال مفتاح' },
-    saved:   { dot: 'bg-amber-500', text: 'مفتاح محفوظ — لم يُختبر' },
+    saved:   { dot: 'bg-amber-500', text: 'مفتاح محفوظ' },
     testing: { dot: 'bg-blue-500 animate-pulse', text: 'جارٍ الاختبار...' },
-    ok:      { dot: 'bg-green-500', text: '✓ مفتاح يعمل بنجاح' },
-    error:   { dot: 'bg-red-500', text: 'مفتاح غير صحيح' },
+    ok:      { dot: 'bg-green-500', text: '✓ مفتاح يعمل — Gemini جاهز' },
+    error:   { dot: 'bg-red-500', text: 'مفتاح غير صحيح — تحقق منه' },
   }
 
   const s = statusConfig[status]
@@ -80,7 +80,6 @@ export default function SettingsModal({ open, onClose }: Props) {
         className="relative bg-white rounded-2xl shadow-xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Toast */}
         {toast && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs px-4 py-2 rounded-lg shadow-lg z-10">
             {toast}
@@ -88,7 +87,6 @@ export default function SettingsModal({ open, onClose }: Props) {
         )}
 
         <div className="p-6">
-          {/* Header */}
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-lg font-bold" style={{ color: '#2d2066' }}>
               ⚙️ إعدادات الاتصال بالذكاء الاصطناعي
@@ -97,39 +95,48 @@ export default function SettingsModal({ open, onClose }: Props) {
           </div>
 
           {/* Info card */}
-          <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-5 text-sm text-blue-800 leading-relaxed">
-            لتفعيل توليد التقارير، أدخل مفتاح API الخاص بك من Anthropic.
+          <div className="bg-blue-50 rounded-lg p-4 mb-5 text-sm text-blue-800 leading-relaxed" style={{ borderRight: '3px solid #4B3DAB' }}>
+            ✨ يستخدم هذا التطبيق <strong>Google Gemini</strong> لتوليد التقارير.
             <br />
-            يُحفظ المفتاح على جهازك فقط ولا يُرسَل لأي خادم خارجي.
+            المفتاح مجاني ولا يحتاج بطاقة بنكية.
+            <br />
+            يُحفظ على جهازك فقط ولا يُرسَل لأي خادم.
           </div>
 
-          {/* How to get key (collapsible) */}
+          {/* How to get key */}
           <div className="mb-5">
             <button
               onClick={() => setShowHelp(!showHelp)}
               className="text-xs text-purple hover:underline cursor-pointer"
             >
-              كيف أحصل على مفتاح API؟ {showHelp ? '▲' : '▼'}
+              كيف تحصل على مفتاح Gemini مجاناً؟ {showHelp ? '▲' : '▼'}
             </button>
             {showHelp && (
               <div className="mt-2 bg-gray-50 rounded-lg p-4 text-xs text-gray-600 leading-relaxed space-y-1">
-                <p>1. اذهب إلى console.anthropic.com</p>
-                <p>2. سجّل دخول أو أنشئ حساباً</p>
-                <p>3. اختر API Keys من القائمة</p>
-                <p>4. انقر Create Key</p>
-                <p>5. انسخ المفتاح والصقه هنا</p>
+                <p>1. اذهب إلى: aistudio.google.com</p>
+                <p>2. سجّل دخول بحساب Google</p>
+                <p>3. انقر Get API Key ثم Create API Key</p>
+                <p>4. انسخ المفتاح والصقه هنا</p>
+                <a
+                  href="https://aistudio.google.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-2 text-purple hover:underline font-medium"
+                >
+                  فتح Google AI Studio ←
+                </a>
               </div>
             )}
           </div>
 
           {/* API Key input */}
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1.5">مفتاح API</label>
+            <label className="block text-sm font-medium mb-1.5">مفتاح Gemini API</label>
             <div className="relative">
               <input
                 type={showKey ? 'text' : 'password'}
                 className="w-full rounded-lg border border-border px-4 py-3 text-sm focus:outline-none focus:border-purple focus:ring-1 focus:ring-purple pr-12"
-                placeholder="sk-ant-api03-..."
+                placeholder="AIzaSy..."
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 dir="ltr"
