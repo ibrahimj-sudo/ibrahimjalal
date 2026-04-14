@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { createEmptyReport, getReportById, upsertReport } from '../types'
-import type { Report } from '../types'
+import type { Report, ReportSectionData } from '../types'
+import { hasApiKey } from '../services/claudeAI'
 import OrgDataTab from './OrgDataTab'
 import InterviewTab from './InterviewTab'
 import ReportTab from './ReportTab'
+import SettingsModal from './SettingsModal'
 
 type TabId = 'org' | 'interview' | 'report'
 
@@ -19,8 +21,8 @@ export default function NewReport() {
   const navigate = useNavigate()
   const location = useLocation()
   const [saved, setSaved] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
-  // Determine initial tab from route
   const getTabFromPath = (): TabId => {
     if (location.pathname.includes('/interview')) return 'interview'
     if (location.pathname.includes('/generate')) return 'report'
@@ -29,7 +31,6 @@ export default function NewReport() {
 
   const [activeTab, setActiveTab] = useState<TabId>(getTabFromPath)
 
-  // Load or create report
   const [report, setReport] = useState<Report>(() => {
     if (id) {
       const existing = getReportById(id)
@@ -38,7 +39,6 @@ export default function NewReport() {
     return createEmptyReport()
   })
 
-  // Save report on first render if new
   useEffect(() => {
     if (!id) {
       upsertReport(report)
@@ -58,8 +58,12 @@ export default function NewReport() {
     showSaved()
   }
 
+  const apiKeyExists = hasApiKey()
+
   return (
     <>
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
       {/* Header */}
       <header className="no-print bg-white border-b border-border h-14 flex items-center justify-between px-6">
         <div className="flex items-center gap-4">
@@ -71,17 +75,23 @@ export default function NewReport() {
             {report.orgData.name || 'تقرير جديد'}
           </span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <span
-            className={`text-sm transition-opacity duration-300 ${
-              saved ? 'opacity-100 text-green-600' : 'opacity-0'
-            }`}
+            className={`text-sm transition-opacity duration-300 ${saved ? 'opacity-100 text-green-600' : 'opacity-0'}`}
           >
             تم الحفظ ✓
           </span>
           <Link to="/dashboard" className="text-xs text-gray-400 hover:text-purple transition-colors">
             📋 لوحة التحكم
           </Link>
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="relative text-gray-400 hover:text-purple transition-colors cursor-pointer text-lg"
+            title="الإعدادات"
+          >
+            ⚙️
+            <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${apiKeyExists ? 'bg-green-500' : 'bg-red-500'}`} />
+          </button>
         </div>
       </header>
 
@@ -128,9 +138,25 @@ export default function NewReport() {
         {activeTab === 'report' && (
           <ReportTab
             report={report}
-            onReportGenerated={(content) => {
-              saveReport({ ...report, reportContent: content, status: 'pending_review', currentStage: 4 })
+            onReportGenerated={(content: string, sections: Record<string, ReportSectionData>) => {
+              const updated = {
+                ...report,
+                reportContent: content,
+                status: 'pending_review' as const,
+                currentStage: 4,
+                reportSections: {
+                  executiveSummary: sections.executiveSummary || report.reportSections.executiveSummary,
+                  section1: sections.section1 || report.reportSections.section1,
+                  section2: sections.section2 || report.reportSections.section2,
+                  section3: sections.section3 || report.reportSections.section3,
+                  section4: sections.section4 || report.reportSections.section4,
+                  section5: sections.section5 || report.reportSections.section5,
+                  section6: sections.section6 || report.reportSections.section6,
+                },
+              }
+              saveReport(updated)
             }}
+            onOpenSettings={() => setSettingsOpen(true)}
           />
         )}
       </main>
