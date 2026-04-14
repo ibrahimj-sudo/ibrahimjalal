@@ -1,30 +1,27 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
-import type { OrgData, Answers } from '../types'
+import type { Report } from '../types'
 import { questions } from '../questions'
 
-export default function ReportTab() {
-  const [orgData, setOrgData] = useState<OrgData | null>(null)
-  const [answers, setAnswers] = useState<Answers | null>(null)
-  const [report, setReport] = useState('')
+interface Props {
+  report: Report
+  onReportGenerated: (content: string) => void
+}
+
+export default function ReportTab({ report, onReportGenerated }: Props) {
+  const [reportText, setReportText] = useState(report.reportContent || '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
 
-  useEffect(() => {
-    const org = localStorage.getItem('sana_org_data')
-    const ans = localStorage.getItem('sana_answers')
-    if (org) setOrgData(JSON.parse(org))
-    if (ans) setAnswers(JSON.parse(ans))
-  }, [])
-
+  const { orgData, answers } = report
   const hasAnswers = answers && Object.keys(answers).length >= questions.length
 
   const generateReport = async () => {
     if (!orgData || !answers) return
     setLoading(true)
     setError('')
-    setReport('')
+    setReportText('')
 
     try {
       const answersArray = questions.map((q) => ({
@@ -43,7 +40,8 @@ export default function ReportTab() {
       if (!res.ok) throw new Error('فشل في الاتصال بالخادم')
 
       const data = await res.json()
-      setReport(data.report)
+      setReportText(data.report)
+      onReportGenerated(data.report)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع')
     } finally {
@@ -52,7 +50,7 @@ export default function ReportTab() {
   }
 
   const copyReport = async () => {
-    await navigator.clipboard.writeText(report)
+    await navigator.clipboard.writeText(reportText)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -97,14 +95,14 @@ export default function ReportTab() {
       </div>
 
       {/* Section B: Report Result */}
-      {report && (
+      {reportText && (
         <div>
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="text-lg font-bold mb-4" style={{ color: '#2d2066' }}>
               نتيجة التقرير
             </h2>
             <div className="prose prose-sm max-w-none text-text leading-relaxed" dir="rtl">
-              <ReactMarkdown>{report}</ReactMarkdown>
+              <ReactMarkdown>{reportText}</ReactMarkdown>
             </div>
           </div>
 

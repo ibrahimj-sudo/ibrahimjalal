@@ -1,26 +1,18 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { questions } from '../questions'
-import type { Answers } from '../types'
-
-const STORAGE_KEY = 'sana_answers'
+import type { Answers, Report } from '../types'
 
 interface Props {
-  onSave: () => void
-  onComplete: () => void
+  report: Report
+  onSave: (answers: Answers) => void
+  onComplete: (answers: Answers) => void
 }
 
-export default function InterviewTab({ onSave, onComplete }: Props) {
+export default function InterviewTab({ report, onSave, onComplete }: Props) {
   const [currentQ, setCurrentQ] = useState(0)
-  const [answers, setAnswers] = useState<Answers>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    return stored ? JSON.parse(stored) : {}
-  })
+  const [answers, setAnswers] = useState<Answers>(() => ({ ...report.answers }))
   const [showHint, setShowHint] = useState(false)
   const [completed, setCompleted] = useState(false)
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(answers))
-  }, [answers])
 
   const q = questions[currentQ]
   const total = questions.length
@@ -35,7 +27,7 @@ export default function InterviewTab({ onSave, onComplete }: Props) {
   }
 
   const goNext = () => {
-    onSave()
+    onSave(answers)
     if (currentQ < total - 1) {
       setCurrentQ(currentQ + 1)
       setShowHint(false)
@@ -63,7 +55,7 @@ export default function InterviewTab({ onSave, onComplete }: Props) {
             تم حفظ جميع الإجابات بنجاح. يمكنك الآن توليد التقرير.
           </p>
           <button
-            onClick={onComplete}
+            onClick={() => onComplete(answers)}
             className="bg-purple text-white px-6 py-3 rounded-lg font-medium text-sm hover:opacity-90 transition-opacity cursor-pointer"
           >
             الانتقال لتوليد التقرير ←

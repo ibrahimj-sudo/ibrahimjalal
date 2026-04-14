@@ -1,21 +1,9 @@
-import { useState, useEffect } from 'react'
-import type { OrgData } from '../types'
-
-const STORAGE_KEY = 'sana_org_data'
-
-const emptyOrg: OrgData = {
-  name: '',
-  field: '',
-  issue: '',
-  targetGroup: '',
-  intervieweeName: '',
-  jobTitle: '',
-  interviewDate: '',
-  consultantName: '',
-}
+import { useState } from 'react'
+import type { OrgData, Report } from '../types'
 
 interface Props {
-  onSave: () => void
+  report: Report
+  onSave: (data: OrgData) => void
   onNext: () => void
 }
 
@@ -30,15 +18,8 @@ const fields: { key: keyof OrgData; label: string; required: boolean; type: 'tex
   { key: 'consultantName', label: 'اسم المقابِل (المستشار)', required: true, type: 'text', placeholder: 'اسم المستشار الذي يجري المقابلة' },
 ]
 
-export default function OrgDataTab({ onSave, onNext }: Props) {
-  const [data, setData] = useState<OrgData>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    return stored ? JSON.parse(stored) : emptyOrg
-  })
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
-  }, [data])
+export default function OrgDataTab({ report, onSave, onNext }: Props) {
+  const [data, setData] = useState<OrgData>(() => ({ ...report.orgData }))
 
   const update = (key: keyof OrgData, value: string) => {
     setData((prev) => ({ ...prev, [key]: value }))
@@ -46,8 +27,7 @@ export default function OrgDataTab({ onSave, onNext }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
-    onSave()
+    onSave(data)
     onNext()
   }
 
@@ -67,7 +47,7 @@ export default function OrgDataTab({ onSave, onNext }: Props) {
               rows={f.rows || 3}
               placeholder={f.placeholder}
               required={f.required}
-              value={data[f.key]}
+              value={data[f.key] as string}
               onChange={(e) => update(f.key, e.target.value)}
             />
           ) : (
@@ -76,7 +56,7 @@ export default function OrgDataTab({ onSave, onNext }: Props) {
               className={inputClass}
               placeholder={f.placeholder}
               required={f.required}
-              value={data[f.key]}
+              value={data[f.key] as string}
               onChange={(e) => update(f.key, e.target.value)}
             />
           )}
